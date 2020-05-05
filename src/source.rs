@@ -6,6 +6,7 @@ use std::fs::File;
 #[serde(rename_all = "lowercase")]
 pub enum FormatKind {
     Markdown,
+    Pandoc,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -18,6 +19,7 @@ pub struct Post {
     pub draft: Option<bool>,
     pub tags: Option<Vec<String>>,
     pub markdown: Option<MarkdownConfig>,
+    pub pandoc: Option<serde_yaml::Value>,
 
     #[serde(skip)]
     pub base_dir: String,
@@ -52,11 +54,14 @@ mod tests {
         env_logger::init();
 
         let posts = source_from_directory("test/content").expect("failed to get posts");
-        assert_eq!(posts.len(), 1);
+        assert_eq!(posts.len(), 2);
 
-        let md_post = posts.get(0).unwrap();
-        assert_eq!(md_post.base_dir, "test/content/markdown");
+        let md_post = posts.iter().find(|p| p.base_dir == "test/content/markdown").unwrap();
         assert_eq!(md_post.title, "A post in markdown!");
         assert_eq!(md_post.format, FormatKind::Markdown);
+
+        let pandoc_md_post = posts.iter().find(|p| p.base_dir == "test/content/markdown-pandoc").unwrap();
+        assert_eq!(pandoc_md_post.title, "A post in pandoc markdown!");
+        assert_eq!(pandoc_md_post.format, FormatKind::Pandoc);        
     }
 }
