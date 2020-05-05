@@ -5,7 +5,7 @@ Turns your blog posts into a GraphQL API.
 
 ## Why would you ever want to do that?
 
-- Cleanly separate your posts from the frontend. Your posts can live in a content-only Github repository and be served to multiple websites
+- Cleanly separate your posts from the frontend. Your posts can live in a content-only Github repository and be served to multiple websites or a static site generator.
 - Write content in any format, including Markdown or Jupyter, and transform it to multiple output formats like HTML, PDF and RSS
 - Use convenient transformations, like adding citations or table of contents, without writing extra code
 
