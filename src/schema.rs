@@ -20,23 +20,40 @@ impl crate::source::Post {
         &self.date
     }
 
-    fn tags(&self) -> Option<&Vec<String>> {
-        self.tags.as_ref()
-    }    
+    fn description(&self) -> Option<&String> {
+        self.description.as_ref()
+    }
 
     fn slug(&self) -> String {
         self.slug.clone().unwrap_or(self.title.to_kebab_case())
     }
 
+    fn url(&self) -> Option<&String> {
+        self.url.as_ref()
+    }
+
+    fn draft(&self) -> Option<bool> {
+        self.draft
+    }
+
+    fn tags(&self) -> Option<&Vec<String>> {
+        self.tags.as_ref()
+    }
+
+    fn bibtex(&self) -> Option<&String> {
+        self.bibtex.as_ref()
+    }
+
+    fn authors(&self) -> Option<&Vec<source::Author>> {
+        self.authors.as_ref()
+    }
+
     fn html(&self) -> FieldResult<String> {
         match &self.format {
             FormatKind::Pandoc => {
-                let config = self
-                    .pandoc
-                    .as_ref()
-                    .ok_or(anyhow!("no pandoc config"))?;
+                let config = self.pandoc.as_ref().ok_or(anyhow!("no pandoc config"))?;
                 Ok(crate::build::pandoc_to_html(&self.base_dir, config)?)
-            },
+            }
             FormatKind::Markdown => {
                 let md_config = self
                     .markdown

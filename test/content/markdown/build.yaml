@@ -1,10 +1,26 @@
 title: A post in markdown!
-date: 2020-04-10
+date: "2020-04-10"
+description: |
+  A longer preview
+slug: "a-post-in-markdown"
+url: "/test/a-post-in-markdown"
 draft: true
-tags: ["Machine Learning"]
+tags:
+  - Machine Learning
+authors:
+  - name: Denny Britz
+    email: "dennybritz@gmail.com"
+    url: https://twitter.com/dennybritz
+    affiliation: Stanford University
+    affiliation_url: https://twitter.com/dennybritz
+bibtex: |
+  @article{britz2020hellojupyter,
+    author={Denny Britz},
+    title={Hello World},
+    year={2020},
+    url={https://github.com/dennybritz/blogapi-rs},
+  }
 
 format: markdown
 markdown:
   path: hello-world.md
-
-  
