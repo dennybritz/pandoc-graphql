@@ -1,0 +1,9 @@
+title: A post in pandoc markdown!
+date: 2020-04-10
+draft: true
+tags: ["Machine Learning"]
+
+format: pandoc
+pandoc:
+  input-files: 
+    - hello-world.md
