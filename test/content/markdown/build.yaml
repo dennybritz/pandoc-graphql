@@ -1,0 +1,10 @@
+title: A post in markdown!
+date: 2020-04-10
+draft: true
+categories: ["Machine Learning"]
+
+format: markdown
+markdown:
+  path: hello-world.md
+
+  
