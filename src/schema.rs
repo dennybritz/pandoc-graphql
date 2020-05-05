@@ -1,19 +1,15 @@
+use crate::source;
+use crate::source::FormatKind;
+use anyhow::anyhow;
+use heck::KebabCase;
 use juniper::{EmptyMutation, FieldResult};
-use std::sync::{Arc, Mutex};
-
-pub struct Post {
-    pub id: String,
-    pub title: String,
-    pub date: String,
-    pub slug: String,
-    pub html: String,
-}
+use std::sync::{Arc, RwLock};
 
 #[juniper::object]
 #[graphql(description = "A blog post")]
-impl Post {
+impl crate::source::Post {
     fn id(&self) -> &str {
-        &self.id
+        "TODO"
     }
 
     fn title(&self) -> &str {
@@ -24,26 +20,41 @@ impl Post {
         &self.date
     }
 
-    fn slug(&self) -> &str {
-        &self.slug
+    fn slug(&self) -> String {
+        self.slug.clone().unwrap_or(self.title.to_kebab_case())
     }
 
-    // TODO: HTML should be generated here...
-    fn html(&self) -> &str {
-        &self.html
-    }    
+    fn html(&self) -> FieldResult<String> {
+        match &self.format {
+            FormatKind::Markdown => {
+                let md_config = self
+                    .markdown
+                    .as_ref()
+                    .ok_or(anyhow!("no markdown config"))?;
+                Ok(crate::build::markdown_to_html(&self.base_dir, md_config)?)
+            }
+        }
+    }
 }
 
 #[derive(Clone)]
 pub struct SharedContext {
-    pub context: Arc<Mutex<Context>>,
+    pub context: Arc<RwLock<Context>>,
 }
 
 impl SharedContext {
     pub fn new() -> Self {
         SharedContext {
-            context: Arc::new(Mutex::new(Context { posts: vec![] })),
+            context: Arc::new(RwLock::new(Context { posts: vec![] })),
         }
+    }
+
+    pub fn update(&self, path: &str) {
+        let mut ctx = self.context.write().unwrap();
+        match crate::source::source_from_directory(path) {
+            Ok(posts) => ctx.posts = posts,
+            Err(e) => log::warn!("failed to source posts from {}: {}", path, e),
+        };
     }
 }
 
@@ -60,15 +71,10 @@ impl Query {
         "1.0"
     }
 
-    fn posts(context: &SharedContext) -> FieldResult<Vec<Post>> {
-        let context = context.context.lock().unwrap();
-        // TODO: Handle build error here
-        let posts = context
-            .posts
-            .iter()
-            .map(|p| crate::build::build_post(p).unwrap())
-            .collect();
-        Ok(posts)
+    fn posts(context: &SharedContext) -> FieldResult<Vec<source::Post>> {
+        let context = context.context.as_ref().read().unwrap();
+        // TODO: Can we get rid of this clone !?
+        Ok(context.posts.clone())
     }
 }
 

@@ -1,9 +1,9 @@
 use blogapi::schema;
 use clap::Clap;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
-use warp::{Filter};
+use warp::Filter;
 
-use juniper::{EmptyMutation};
+use juniper::EmptyMutation;
 
 #[derive(Clap)]
 #[clap(version = "0.1.0", author = "Denny Britz <dennybritz@gmail.com>")]
@@ -35,30 +35,22 @@ fn serve(opts: &ServeOpts) {
 
     let path = opts.path.clone();
     let shared_ctx = schema::SharedContext::new();
-    {
-        let mut ctx = shared_ctx.context.lock().unwrap();
-        ctx.posts = blogapi::source::source_from_directory(&path);
-    }
+    shared_ctx.update(&path);
+
     let watched_ctx = shared_ctx.clone();
-    let mut watcher: RecommendedWatcher = Watcher::new_immediate(move |res| {
-        match res {
-           Ok(_event) => {
-               // update the shared context
-               log::info!("file changed detected, rebuilding context");
-               let mut ctx = watched_ctx.context.lock().unwrap();
-               ctx.posts = blogapi::source::source_from_directory(&path);
-           },
-           Err(e) => log::info!("watch error: {:?}", e),
+    let mut watcher: RecommendedWatcher = Watcher::new_immediate(move |res| match res {
+        Ok(_event) => {
+            log::info!("file changed detected, rebuilding context");
+            watched_ctx.update(&path);
         }
-    }).expect("failed to create watcher");
+        Err(e) => log::info!("watch error: {:?}", e),
+    })
+    .expect("failed to create watcher");
     watcher.watch(&opts.path, RecursiveMode::Recursive).unwrap();
 
     let state = warp::any().map(move || shared_ctx.clone());
     let warp_log = warp::log("warp_server");
-    let graphql_filter = juniper_warp::make_graphql_filter(
-        make_schema(),
-        state.boxed(),
-    );
+    let graphql_filter = juniper_warp::make_graphql_filter(make_schema(), state.boxed());
 
     log::info!("Listening on 0.0.0.0:8080");
     warp::serve(
