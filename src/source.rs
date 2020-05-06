@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde::Deserialize;
 use std::fs::File;
+use heck::KebabCase;
 
 #[derive(Deserialize, Debug, Eq, PartialEq, Copy, Clone)]
 #[serde(rename_all = "lowercase")]
@@ -27,6 +28,12 @@ pub struct Post {
 
     #[serde(skip)]
     pub base_dir: String,
+}
+
+impl Post {
+    pub fn slug(&self) -> String {
+        self.slug.clone().unwrap_or(self.title.to_kebab_case())
+    }    
 }
 
 #[derive(Deserialize, Debug, Clone, juniper::GraphQLObject)]

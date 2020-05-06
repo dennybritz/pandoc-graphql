@@ -24,6 +24,10 @@ struct ServeOpts {
     /// Read JSON records from this path
     #[clap(short = "p", long = "path")]
     path: String,
+
+    /// Enable CORS requests from all origins (useful for local development)
+    #[clap(long = "cors")]
+    cors: bool,
 }
 
 fn make_schema() -> schema::Schema {
@@ -51,6 +55,15 @@ fn serve(opts: &ServeOpts) {
     let state = warp::any().map(move || shared_ctx.clone());
     let warp_log = warp::log("warp_server");
     let graphql_filter = juniper_warp::make_graphql_filter(make_schema(), state.boxed());
+
+    let mut cors = warp::cors();
+    if opts.cors {
+        cors = cors
+            .allow_any_origin()
+            .allow_methods(vec!["OPTIONS", "GET", "POST", "DELETE"])
+            .allow_headers(vec!["Content-Type"]);
+    }
+    let graphql_filter = graphql_filter.with(&cors);
 
     log::info!("Listening on 0.0.0.0:8080");
     warp::serve(

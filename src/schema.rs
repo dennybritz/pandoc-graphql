@@ -1,7 +1,6 @@
 use crate::source;
 use crate::source::FormatKind;
 use anyhow::anyhow;
-use heck::KebabCase;
 use juniper::{EmptyMutation, FieldResult};
 use std::sync::{Arc, RwLock};
 
@@ -25,7 +24,7 @@ impl crate::source::Post {
     }
 
     fn slug(&self) -> String {
-        self.slug.clone().unwrap_or(self.title.to_kebab_case())
+        self.slug()
     }
 
     fn url(&self) -> Option<&String> {
@@ -103,6 +102,17 @@ impl Query {
         let context = context.context.as_ref().read().unwrap();
         // TODO: Can we get rid of this clone !?
         Ok(context.posts.clone())
+    }
+
+    fn post(context: &SharedContext, slug: String) -> FieldResult<source::Post> {
+        let context = context.context.as_ref().read().unwrap();
+        let post = context
+            .posts
+            .iter()
+            .find(|p| p.slug() == slug)
+            .ok_or(anyhow::anyhow!("no post for slug: {}", &slug))?
+            .clone();
+        Ok(post)
     }
 }
 
