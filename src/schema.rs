@@ -51,7 +51,9 @@ impl crate::source::Post {
         match &self.format {
             FormatKind::Pandoc => {
                 let config = self.pandoc.as_ref().ok_or(anyhow!("no pandoc config"))?;
-                Ok(crate::build::pandoc_to_html(&self.base_dir, config)?)
+                let buf = crate::build::run_pandoc(&self.base_dir, config, "html")?;
+                let html = String::from_utf8(buf)?;
+                Ok(html)
             }
             FormatKind::Markdown => {
                 let md_config = self
@@ -62,6 +64,21 @@ impl crate::source::Post {
             }
         }
     }
+
+    fn convert(&self, format: String) -> FieldResult<String> {
+        match &self.format {
+            FormatKind::Pandoc => {
+                // TODO: Support conversion from arbitrary html
+                let config = self.pandoc.as_ref().ok_or(anyhow!("no pandoc config"))?;
+                let buf = crate::build::run_pandoc(&self.base_dir, config, &format)?;
+                Ok(base64::encode(buf))
+            }
+            FormatKind::Markdown => {
+                Err(anyhow!("output conversion is currently only supported for pandoc posts").into())
+            }
+        }
+    }
+    
 }
 
 #[derive(Clone)]
