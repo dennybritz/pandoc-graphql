@@ -1,9 +1,9 @@
-title: Writing in Markdown
+title: Writing in Pandoc Jupyter
 date: "2020-04-10"
 description: |
-  This example demonstrates how to write content in markdown. Cupcake ipsum dolor sit amet chocolate bar. Donut topping jelly macaroon dessert powder cheesecake.
-slug: "writing-in-markdown"
-url: "/2020/04/writing-in-markdown"
+  This example demonstrates how to write content in jupyter. Cupcake ipsum dolor sit amet chocolate bar. Donut topping jelly macaroon dessert powder cheesecake.
+slug: "writing-in-jupyter"
+url: "/2020/04/writing-in-jupyter"
 draft: true
 tags:
   - Machine Learning
@@ -14,13 +14,14 @@ authors:
     affiliation: Stanford University
     affiliation_url: https://twitter.com/dennybritz
 bibtex: |
-  @article{britz2020hellomarkdown,
+  @article{britz2020hellopandocJupyter,
     author={Denny Britz},
     title={Hello World},
     year={2020},
     url={https://github.com/dennybritz/blogapi-rs},
   }
 
-format: markdown
-markdown:
-  path: content.md
+format: pandoc
+pandoc:
+  input-files:
+    - content.ipynb
