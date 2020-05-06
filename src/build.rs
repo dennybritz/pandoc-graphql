@@ -15,7 +15,11 @@ pub fn markdown_to_html(base_dir: &str, config: &source::MarkdownConfig) -> Resu
     Ok(String::from_utf8(bytes)?)
 }
 
-pub fn pandoc_to_html(base_dir: &str, config: &serde_yaml::Value) -> Result<String> {
+pub fn run_pandoc(
+    base_dir: &str,
+    config: &serde_yaml::Value,
+    output_format: &str,
+) -> Result<Vec<u8>> {
     // Because we need to pass the config to pandoc as a command-line argument,
     // we write it into a temporary file to disk
     let (file, config_path) = NamedTempFile::new()?.keep()?;
@@ -27,7 +31,7 @@ pub fn pandoc_to_html(base_dir: &str, config: &serde_yaml::Value) -> Result<Stri
         .arg("-d")
         .arg(format!("{}", &config_path.display()))
         .arg("-t")
-        .arg("html")
+        .arg(output_format)
         .output()?;
 
     let stderr = String::from_utf8(output.stderr)?;
@@ -39,7 +43,7 @@ pub fn pandoc_to_html(base_dir: &str, config: &serde_yaml::Value) -> Result<Stri
         return Err(anyhow::anyhow!("pandoc failure: {}", stderr));
     }
 
-    Ok(String::from_utf8(output.stdout)?)
+    Ok(output.stdout)
 }
 
 #[cfg(test)]
@@ -47,7 +51,7 @@ mod tests {
     use super::*;
 
     #[test]
-    pub fn test_pandoc_to_html() {
+    pub fn test_run_pandoc() {
         env_logger::init();
         let base_dir = "test/content/markdown-pandoc";
         let config: serde_yaml::Value = serde_yaml::from_str(
@@ -57,7 +61,8 @@ mod tests {
         )
         .unwrap();
 
-        let result = pandoc_to_html(base_dir, &config).expect("failed to call pandoc");
+        let result = run_pandoc(base_dir, &config, "html").expect("failed to call pandoc");
+        let result = String::from_utf8(result).expect("invalid utf-8 data");
 
         assert_eq!(
             result,
