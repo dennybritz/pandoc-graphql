@@ -47,6 +47,10 @@ impl crate::source::Post {
         self.authors.as_ref()
     }
 
+    fn assets(&self) -> &Vec<source::Asset> {
+        &self.assets
+    }
+
     fn html(&self) -> FieldResult<String> {
         match &self.format {
             FormatKind::Pandoc => {
@@ -73,12 +77,12 @@ impl crate::source::Post {
                 let buf = crate::build::run_pandoc(&self.base_dir, config, &format)?;
                 Ok(base64::encode(buf))
             }
-            FormatKind::Markdown => {
-                Err(anyhow!("output conversion is currently only supported for pandoc posts").into())
-            }
+            FormatKind::Markdown => Err(anyhow!(
+                "output conversion is currently only supported for pandoc posts"
+            )
+            .into()),
         }
     }
-    
 }
 
 #[derive(Clone)]

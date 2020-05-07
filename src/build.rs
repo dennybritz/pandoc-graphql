@@ -50,23 +50,23 @@ pub fn run_pandoc(
 mod tests {
     use super::*;
 
+    fn init() {
+        let _ = env_logger::builder().is_test(true).try_init();
+    }
+
     #[test]
     pub fn test_run_pandoc() {
-        env_logger::init();
+        init();
         let base_dir = "test/content/markdown-pandoc";
         let config: serde_yaml::Value = serde_yaml::from_str(
             r###"
-        input-file: hello-world.md
+        input-file: content.md
         "###,
         )
         .unwrap();
 
         let result = run_pandoc(base_dir, &config, "html").expect("failed to call pandoc");
         let result = String::from_utf8(result).expect("invalid utf-8 data");
-
-        assert_eq!(
-            result,
-            "<h2 id=\"a-post-in-pandoc-markdown\">A post in pandoc markdown!</h2>\n<p>Hello World!</p>\n"
-        );
+        assert!(result.contains("Cupcake ipsum dolor sit amet"));
     }
 }
