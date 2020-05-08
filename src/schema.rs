@@ -51,6 +51,17 @@ impl crate::source::Post {
         &self.assets
     }
 
+    fn citations(&self) -> FieldResult<Option<Vec<source::Citation>>> {
+        match &self.bibliography {
+            Some(bibfile) => {
+                let bibstr = crate::build::run_pandoc_citeproc(&self.base_dir, &bibfile)?;
+                let citations: source::Citations = serde_yaml::from_str(&bibstr)?;
+                Ok(Some(citations.references))
+            }
+            None => Ok(None),
+        }
+    }
+
     fn html(&self) -> FieldResult<String> {
         match &self.format {
             FormatKind::Pandoc => {
