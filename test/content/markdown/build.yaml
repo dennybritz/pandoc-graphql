@@ -12,7 +12,8 @@ authors:
     email: "dennybritz@gmail.com"
     url: https://twitter.com/dennybritz
     affiliation: Stanford University
-    affiliation_url: https://twitter.com/dennybritz
+    affiliation_url: https://stanford.edu
+  - name: Kiryu Kazuma
 bibtex: |
   @article{britz2020hellomarkdown,
     author={Denny Britz},
