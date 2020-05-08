@@ -46,6 +46,26 @@ pub fn run_pandoc(
     Ok(output.stdout)
 }
 
+pub fn run_pandoc_citeproc(base_dir: &str, bibfile_path: &str) -> Result<String> {
+    log::info!("running: pandoc-citeproc -y {}", bibfile_path);
+    let output = Command::new("pandoc-citeproc")
+        .current_dir(base_dir)
+        .arg("-y")
+        .arg(bibfile_path)
+        .output()?;
+
+    let stderr = String::from_utf8(output.stderr)?;
+    for line in stderr.lines() {
+        log::warn!("[pandoc] {}", line);
+    }
+
+    if !output.status.success() {
+        return Err(anyhow::anyhow!("pandoc failure: {}", stderr));
+    }
+
+    Ok(String::from_utf8(output.stdout)?)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -68,5 +88,13 @@ mod tests {
         let result = run_pandoc(base_dir, &config, "html").expect("failed to call pandoc");
         let result = String::from_utf8(result).expect("invalid utf-8 data");
         assert!(result.contains("Cupcake ipsum dolor sit amet"));
+    }
+
+    #[test]
+    pub fn test_run_citeproc() {
+        init();
+        let result = run_pandoc_citeproc("test/content/citations", "references.bib")
+            .expect("failed to call pandoc-citeproc");
+        assert!(result.contains("Impartial triangular chocolate bar games"));
     }
 }

@@ -71,4 +71,9 @@ bibtex: |
     year={2020},
     url={https://github.com/dennybritz/blogapi-rs},
   }
+
+# A bibliography file used to generate citations
+# anything that can be read by pandoc-citeproc is valid here
+# See https://github.com/jgm/pandoc-citeproc/blob/master/man/pandoc-citeproc.1.md
+bibliography: references.bib
 ```

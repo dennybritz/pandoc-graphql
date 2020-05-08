@@ -23,6 +23,7 @@ pub struct Post {
     pub tags: Option<Vec<String>>,
     pub authors: Option<Vec<Author>>,
     pub bibtex: Option<String>,
+    pub bibliography: Option<String>,
     pub markdown: Option<MarkdownConfig>,
     pub pandoc: Option<serde_yaml::Value>,
 
@@ -30,6 +31,45 @@ pub struct Post {
     pub base_dir: String,
     #[serde(skip)]
     pub assets: Vec<Asset>,
+}
+
+/// A citation in CSL (https://citationstyles.org/) format
+/// Also see
+/// - https://citeproc-js.readthedocs.io/en/latest/csl-json/markup.html
+/// - https://github.com/jgm/pandoc-citeproc/blob/master/man/pandoc-citeproc.1.md
+#[derive(Deserialize, Debug, Clone, juniper::GraphQLObject)]
+#[serde(rename_all = "kebab-case")]
+pub struct Citation {
+    pub id: String,
+    pub title: Option<String>,
+    pub author: Option<Vec<CitationAuthor>>,
+    pub container_title: Option<String>,
+    pub publisher: Option<String>,
+    pub volume: Option<String>,
+    pub issue: Option<String>,
+    pub issued: Option<Vec<CitationIssued>>,
+    #[serde(rename = "URL")]
+    pub url: Option<String>,
+    #[serde(rename = "DOI")]
+    pub doi: Option<String>,
+}
+
+#[derive(Deserialize, Debug, Clone, juniper::GraphQLObject)]
+pub struct CitationAuthor {
+    pub family: Option<String>,
+    pub given: Option<String>,
+}
+
+#[derive(Deserialize, Debug, Clone, juniper::GraphQLObject)]
+#[serde(rename_all = "kebab-case")]
+pub struct CitationIssued {
+    pub year: Option<i32>,
+    pub month: Option<i32>,
+}
+
+#[derive(Deserialize, Debug, Clone, juniper::GraphQLObject)]
+pub struct Citations {
+    pub references: Vec<Citation>,
 }
 
 impl Post {
@@ -100,6 +140,74 @@ mod tests {
 
     fn init() {
         let _ = env_logger::builder().is_test(true).try_init();
+    }
+
+    #[test]
+    pub fn test_deserialize_citation() {
+        init();
+        let citation_raw = r###"
+            id: Ruiz_2015
+            type: article-journal
+            author:
+            - family: Ruiz
+              given: Eduardo J.
+            - family: Huterer
+              given: Dragan
+            issued:
+            - year: 2015
+              month: 3
+            title: Testing the dark energy consistency with geometry and growth
+            container-title: Physical Review D
+            publisher: American Physical Society (APS)
+            volume: '91'
+            issue: '6'
+            URL: http://dx.doi.org/10.1103/PhysRevD.91.063009
+            DOI: 10.1103/physrevd.91.063009
+            ISSN: 1550-2368      
+        "###;
+        let c: Citation = serde_yaml::from_str(citation_raw).expect("failed to parse citation");
+
+        assert_eq!(c.id, "Ruiz_2015");
+        let author = c.author.unwrap();
+        assert_eq!(author.len(), 2);
+        assert_eq!(
+            author.get(0).and_then(|a| a.family.as_ref()),
+            Some(&String::from("Ruiz"))
+        );
+        assert_eq!(
+            author.get(0).and_then(|a| a.given.as_ref()),
+            Some(&String::from("Eduardo J."))
+        );
+        assert_eq!(
+            author.get(1).and_then(|a| a.family.as_ref()),
+            Some(&String::from("Huterer"))
+        );
+        assert_eq!(
+            author.get(1).and_then(|a| a.given.as_ref()),
+            Some(&String::from("Dragan"))
+        );
+        assert_eq!(
+            c.issued.as_ref().unwrap().get(0).and_then(|x| x.year),
+            Some(2015)
+        );
+        assert_eq!(
+            c.issued.as_ref().unwrap().get(0).and_then(|x| x.month),
+            Some(3)
+        );
+
+        assert_eq!(
+            c.title.unwrap(),
+            "Testing the dark energy consistency with geometry and growth"
+        );
+        assert_eq!(c.container_title.unwrap(), "Physical Review D");
+        assert_eq!(c.publisher.unwrap(), "American Physical Society (APS)");
+        assert_eq!(c.volume.unwrap(), "91");
+        assert_eq!(c.issue.unwrap(), "6");
+        assert_eq!(
+            c.url.unwrap(),
+            "http://dx.doi.org/10.1103/PhysRevD.91.063009"
+        );
+        assert_eq!(c.doi.unwrap(), "10.1103/physrevd.91.063009");
     }
 
     #[test]
