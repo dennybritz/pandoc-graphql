@@ -1,14 +1,11 @@
 use crate::source;
 use juniper::{EmptyMutation, FieldResult};
 use std::sync::{Arc, RwLock};
+use chrono::prelude::*;
 
 #[juniper::object]
 #[graphql(description = "A blog post")]
 impl crate::source::Post {
-    // fn id(&self) -> &str {
-    //     "TODO"
-    // }
-
     fn title(&self) -> &str {
         &self.title
     }
@@ -103,7 +100,13 @@ impl Query {
     fn posts(context: &SharedContext) -> FieldResult<Vec<source::Post>> {
         let context = context.context.as_ref().read().unwrap();
         // TODO: Can we get rid of this clone !?
-        Ok(context.posts.clone())
+        let mut posts = context.posts.clone();
+        posts.sort_by(|a, b| {
+            let a =  NaiveDate::parse_from_str(&a.date, "%Y-%m-%d").unwrap();
+            let b =  NaiveDate::parse_from_str(&b.date, "%Y-%m-%d").unwrap();
+            b.cmp(&a)
+        });
+        Ok(posts)
     }
 
     fn post(context: &SharedContext, slug: String) -> FieldResult<source::Post> {
