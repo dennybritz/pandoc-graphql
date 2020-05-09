@@ -1,8 +1,9 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use heck::KebabCase;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::fs::File;
+use chrono::prelude::*;
 
 #[derive(Deserialize, Debug, Eq, PartialEq, Copy, Clone)]
 #[serde(rename_all = "lowercase")]
@@ -193,7 +194,13 @@ pub fn source_from_directory(base: &str) -> Result<Vec<Post>> {
         .filter_map(|x| x.ok())
         .map(|path| {
             let base_dir = format!("{}", path.parent().unwrap().display());
+            log::info!("sourcing: {}", base_dir);
             let mut post_data: Post = serde_yaml::from_reader(File::open(&path)?)?;
+            
+            // Validate date
+            NaiveDate::parse_from_str(&post_data.date, "%Y-%m-%d")
+                .with_context(|| format!("failed parse date in: {}", base_dir))?;
+
             let asset_path = format!("{}/assets", &base_dir);
             if std::path::Path::new(&asset_path).exists() {
                 post_data.assets = source_assets(&base_dir)?;
@@ -204,7 +211,7 @@ pub fn source_from_directory(base: &str) -> Result<Vec<Post>> {
         .filter_map(|post: Result<Post>| match post {
             Ok(post) => Some(Ok(post)),
             Err(e) => {
-                log::warn!("{}", e);
+                log::error!("{}", e);
                 None
             }
         })

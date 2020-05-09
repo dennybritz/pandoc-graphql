@@ -5,24 +5,25 @@ authors = ["Denny Britz <dennybritz@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+anyhow = "1.0"
+base64 = "0.12.1"
+chrono = "0.4.11"
 clap = "3.0.0-beta.1"
 env_logger = "0.7.1"
 glob = "0.3.0"
+heck = "0.3.1"
 juniper = "0.14.2"
 juniper_warp = "0.5.2"
 log = "0.4.8"
 notify = "5.0.0-pre.2"
+pulldown-cmark = "0.7.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8.11"
+tempfile = "3.1.0"
+thiserror = "1.0"
 tokio = { version = "0.2", features = ["full"] } 
 warp = "0.1"
 yaml-rust = "0.4.3"
-heck = "0.3.1"
-anyhow = "1.0"
-thiserror = "1.0"
-pulldown-cmark = "0.7.1"
-tempfile = "3.1.0"
-base64 = "0.12.1"
 
 [[bin]]
 name = "blogapi"
