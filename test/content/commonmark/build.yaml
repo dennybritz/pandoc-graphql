@@ -3,7 +3,6 @@ date: "2020-05-08"
 description: |
   This example demonstrates how to write content in CommonMark. Cupcake ipsum dolor sit amet chocolate bar. Donut topping jelly macaroon dessert powder cheesecake.
 slug: "writing-in-commonmark"
-url: "/2020/04/writing-in-commonmark"
 draft: true
 tags:
   - Machine Learning

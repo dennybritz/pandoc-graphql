@@ -20,7 +20,6 @@ pub struct Post {
     pub date: String,
     pub description: Option<String>,
     pub slug: Option<String>,
-    pub url: Option<String>,
     pub draft: Option<bool>,
     pub tags: Option<Vec<String>>,
     pub authors: Option<Vec<Author>>,

@@ -3,7 +3,6 @@ date: "2020-05-10"
 description: |
   This example demonstrates how to write content in markdown. Cupcake ipsum dolor sit amet chocolate bar. Donut topping jelly macaroon dessert powder cheesecake.
 slug: "writing-in-markdown"
-url: "/2020/04/writing-in-markdown"
 draft: true
 tags:
   - Machine Learning

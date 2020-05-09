@@ -22,10 +22,6 @@ impl crate::source::Post {
         self.slug()
     }
 
-    fn url(&self) -> Option<&String> {
-        self.url.as_ref()
-    }
-
     fn draft(&self) -> Option<bool> {
         self.draft
     }
