@@ -1,4 +1,4 @@
-use blogapi::schema;
+use ablog_api_local::schema;
 use clap::Clap;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use warp::Filter;

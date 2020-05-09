@@ -1,5 +1,5 @@
 
-# BlogAPI
+# ablog-api-local
 
 Turns your blog posts into a GraphQL API.
 
@@ -69,7 +69,7 @@ bibtex: |
     author={Denny Britz},
     title={Hello World},
     year={2020},
-    url={https://github.com/dennybritz/blogapi-rs},
+    url={https://github.com/dennybritz/ablog-api-local},
   }
 
 # A bibliography file used to generate citations

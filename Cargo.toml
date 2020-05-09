@@ -1,5 +1,5 @@
 [package]
-name = "blogapi"
+name = "ablog-api-local"
 version = "0.1.0"
 authors = ["Denny Britz <dennybritz@gmail.com>"]
 edition = "2018"
@@ -26,5 +26,5 @@ warp = "0.1"
 yaml-rust = "0.4.3"
 
 [[bin]]
-name = "blogapi"
+name = "ablog-api-local"
 src = "src/main.rs"

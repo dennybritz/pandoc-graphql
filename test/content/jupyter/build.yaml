@@ -18,7 +18,7 @@ bibtex: |
     author={Denny Britz},
     title={Hello World},
     year={2020},
-    url={https://github.com/dennybritz/blogapi-rs},
+    url={https://github.com/dennybritz/ablog-api-local},
   }
 bibliography: ../references.bib
 
