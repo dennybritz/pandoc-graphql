@@ -1,0 +1,12 @@
+.db
+.env
+.dockerignore
+.git
+.gitignore
+
+target/
+data/
+hasura/
+notebooks/
+
+Dockerfile
