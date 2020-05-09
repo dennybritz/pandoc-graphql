@@ -1,9 +1,8 @@
 use anyhow::{anyhow, Result};
 use heck::KebabCase;
 use serde::Deserialize;
+use std::collections::BTreeMap;
 use std::fs::File;
-use std::io::Write;
-use tempfile::NamedTempFile;
 
 #[derive(Deserialize, Debug, Eq, PartialEq, Copy, Clone)]
 #[serde(rename_all = "lowercase")]
@@ -27,7 +26,7 @@ pub struct Post {
     pub bibtex: Option<String>,
     pub bibliography: Option<String>,
     pub markdown: Option<MarkdownConfig>,
-    pub pandoc: Option<serde_yaml::Value>,
+    pub pandoc: Option<BTreeMap<String, serde_yaml::Value>>,
 
     #[serde(skip)]
     pub base_dir: String,
@@ -51,11 +50,53 @@ impl Post {
         }
     }
 
+    fn make_pandoc_config(&self) -> Result<BTreeMap<String, serde_yaml::Value>> {
+        let mut config = self
+            .pandoc
+            .clone()
+            .unwrap_or(BTreeMap::new());
+
+        let mut metadata: BTreeMap<String, serde_yaml::Value> = config
+            .get("metadata")
+            .cloned()
+            .map(|e| serde_yaml::from_value(e).unwrap())
+            .unwrap_or(BTreeMap::new());
+
+        metadata
+            .entry("title".into())
+            .or_insert(serde_yaml::Value::String(self.title.clone()));
+
+        metadata
+            .entry("date".into())
+            .or_insert(serde_yaml::Value::String(self.date.clone()));
+
+        if let Some(desc) = &self.description {
+            metadata
+                .entry("description".into())
+                .or_insert(serde_yaml::Value::String(desc.clone()));
+            metadata
+                .entry("abstract".into())
+                .or_insert(serde_yaml::Value::String(desc.clone()));
+        }
+
+        if let Some(authors) = &self.authors {
+            let authors: Vec<String> = authors.iter().map(|a| format!("{}", a.name)).collect();
+            let authors = serde_yaml::to_value(authors).unwrap();
+            metadata.entry("author".into()).or_insert(authors);
+        }
+
+        config.insert("metadata".into(), serde_yaml::to_value(metadata)?);
+
+        // log::info!("{:?}", config);
+
+        Ok(config)
+    }
+
     pub fn html(&self) -> Result<String> {
         match &self.format {
             FormatKind::Pandoc => {
-                let config = self.pandoc.as_ref().ok_or(anyhow!("no pandoc config"))?;
-                let buf = crate::pandoc::run_pandoc(&self.base_dir, config, "html")?;
+                let config = self.make_pandoc_config()?;
+                let buf = crate::pandoc::run_pandoc(&self.base_dir, &config, "html")?;
                 let html = String::from_utf8(buf)?;
                 Ok(html)
             }
@@ -72,13 +113,14 @@ impl Post {
     pub fn convert(&self, format: &str) -> Result<String> {
         match self.format {
             FormatKind::Pandoc => {
-                let config = self.pandoc.as_ref().ok_or(anyhow!("no pandoc config"))?;
-                let buf = crate::pandoc::run_pandoc(&self.base_dir, config, &format)?;
+                let config = self.make_pandoc_config()?;
+                let buf = crate::pandoc::run_pandoc(&self.base_dir, &config, &format)?;
                 Ok(base64::encode(buf))
             }
             _ => {
                 let html = self.html()?;
-                crate::pandoc::convert_from_html(html.as_ref(), format)
+                let config = self.make_pandoc_config()?;
+                crate::pandoc::convert_from_html(html.as_ref(), &config, format)
             }
         }
     }
@@ -158,13 +200,15 @@ pub fn source_from_directory(base: &str) -> Result<Vec<Post>> {
             }
             post_data.base_dir = base_dir;
             return Ok(post_data);
-        }).filter_map(|post: Result<Post>| match post {
+        })
+        .filter_map(|post: Result<Post>| match post {
             Ok(post) => Some(Ok(post)),
             Err(e) => {
                 log::warn!("{}", e);
                 None
             }
-        }).collect()
+        })
+        .collect()
 }
 
 pub fn source_assets(base: &str) -> Result<Vec<Asset>> {
@@ -279,16 +323,16 @@ mod tests {
 
         let md_post = posts
             .iter()
-            .find(|p| p.base_dir == "test/content/markdown")
+            .find(|p| p.base_dir == "test/content/commonmark")
             .unwrap();
-        assert_eq!(md_post.title, "Writing in Markdown");
+        assert_eq!(md_post.title, "Writing in CommonMark");
         assert_eq!(md_post.format, FormatKind::CommonMark);
 
         let pandoc_md_post = posts
             .iter()
-            .find(|p| p.base_dir == "test/content/markdown-pandoc")
+            .find(|p| p.base_dir == "test/content/markdown")
             .unwrap();
-        assert_eq!(pandoc_md_post.title, "Writing in Pandoc Markdown");
+        assert_eq!(pandoc_md_post.title, "Writing in Markdown");
         assert_eq!(pandoc_md_post.format, FormatKind::Pandoc);
     }
 }

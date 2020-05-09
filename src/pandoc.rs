@@ -1,6 +1,7 @@
 use crate::source;
 use anyhow::Result;
 use pulldown_cmark::{html, Parser};
+use std::collections::BTreeMap;
 use std::io::Cursor;
 use std::io::Write;
 use std::process::Command;
@@ -16,26 +17,29 @@ pub fn markdown_to_html(base_dir: &str, config: &source::MarkdownConfig) -> Resu
     Ok(String::from_utf8(bytes)?)
 }
 
-pub fn convert_from_html(html: &str, format: &str) -> Result<String> {
+pub fn convert_from_html(
+    html: &str,
+    config: &BTreeMap<String, serde_yaml::Value>,
+    format: &str,
+) -> Result<String> {
     let (mut file, path) = NamedTempFile::new()?.keep()?;
-    // let parent_dir = format!("{}", path.parent().unwrap().display());
     file.write_all(html.as_bytes())?;
-    log::info!("writing temporary html file: {}", path.display());
-    let config = format!(
-        r###"
-        from: html
-        input-file: '{}'
-    "###,
-        path.display()
+    let mut config = config.clone();
+    config.insert(
+        String::from("from"),
+        serde_yaml::Value::String(String::from("html")),
     );
-    let config = serde_yaml::from_str(&config)?;
+    config.insert(
+        String::from("input-file"),
+        serde_yaml::Value::String(format!("{}", path.display())),
+    );
     let buf = crate::pandoc::run_pandoc(".", &config, &format)?;
     Ok(base64::encode(buf))
 }
 
 pub fn run_pandoc(
     base_dir: &str,
-    config: &serde_yaml::Value,
+    config: &BTreeMap<String, serde_yaml::Value>,
     output_format: &str,
 ) -> Result<Vec<u8>> {
     // Because we need to pass the config to pandoc as a command-line argument,
@@ -95,8 +99,8 @@ mod tests {
     #[test]
     pub fn test_run_pandoc() {
         init();
-        let base_dir = "test/content/markdown-pandoc";
-        let config: serde_yaml::Value = serde_yaml::from_str(
+        let base_dir = "test/content/markdown";
+        let config = serde_yaml::from_str(
             r###"
         input-file: content.md
         "###,
@@ -111,7 +115,7 @@ mod tests {
     #[test]
     pub fn test_run_citeproc() {
         init();
-        let result = run_pandoc_citeproc("test/content/citations", "references.bib")
+        let result = run_pandoc_citeproc("test/content", "references.bib")
             .expect("failed to call pandoc-citeproc");
         assert!(result.contains("Impartial triangular chocolate bar games"));
     }
@@ -120,7 +124,7 @@ mod tests {
     pub fn test_convert_from_html() {
         init();
         let html = "<h1>Hello HTML!</h1>";
-        let result = convert_from_html(html, "markdown").unwrap();
+        let result = convert_from_html(html, &BTreeMap::new(), "markdown").unwrap();
         let decoded = base64::decode(result).expect("base64 decoding failed");
         let result = String::from_utf8(decoded).expect("utf-8 decodding failed");
         assert_eq!(result, "Hello HTML!\n===========\n")
