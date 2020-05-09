@@ -1,15 +1,13 @@
 use crate::source;
-use crate::source::FormatKind;
-use anyhow::anyhow;
 use juniper::{EmptyMutation, FieldResult};
 use std::sync::{Arc, RwLock};
 
 #[juniper::object]
 #[graphql(description = "A blog post")]
 impl crate::source::Post {
-    fn id(&self) -> &str {
-        "TODO"
-    }
+    // fn id(&self) -> &str {
+    //     "TODO"
+    // }
 
     fn title(&self) -> &str {
         &self.title
@@ -52,47 +50,19 @@ impl crate::source::Post {
     }
 
     fn citations(&self) -> FieldResult<Option<Vec<source::Citation>>> {
-        match &self.bibliography {
-            Some(bibfile) => {
-                let bibstr = crate::build::run_pandoc_citeproc(&self.base_dir, &bibfile)?;
-                let citations: source::Citations = serde_yaml::from_str(&bibstr)?;
-                Ok(Some(citations.references))
-            }
-            None => Ok(None),
-        }
+        self.citations().map_err(|e| e.into())
     }
 
     fn html(&self) -> FieldResult<String> {
-        match &self.format {
-            FormatKind::Pandoc => {
-                let config = self.pandoc.as_ref().ok_or(anyhow!("no pandoc config"))?;
-                let buf = crate::build::run_pandoc(&self.base_dir, config, "html")?;
-                let html = String::from_utf8(buf)?;
-                Ok(html)
-            }
-            FormatKind::Markdown => {
-                let md_config = self
-                    .markdown
-                    .as_ref()
-                    .ok_or(anyhow!("no markdown config"))?;
-                Ok(crate::build::markdown_to_html(&self.base_dir, md_config)?)
-            }
-        }
+        self.html().map_err(|e| e.into())
     }
 
-    fn convert(&self, format: String) -> FieldResult<String> {
-        match &self.format {
-            FormatKind::Pandoc => {
-                // TODO: Support conversion from arbitrary html
-                let config = self.pandoc.as_ref().ok_or(anyhow!("no pandoc config"))?;
-                let buf = crate::build::run_pandoc(&self.base_dir, config, &format)?;
-                Ok(base64::encode(buf))
-            }
-            FormatKind::Markdown => Err(anyhow!(
-                "output conversion is currently only supported for pandoc posts"
-            )
-            .into()),
-        }
+    fn pdf(&self) -> FieldResult<String> {
+        self.convert("pdf").map_err(|e| e.into())
+    }
+
+    fn markdown(&self) -> FieldResult<String> {
+        self.convert("markdown").map_err(|e| e.into())
     }
 }
 

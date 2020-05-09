@@ -1,8 +1,0 @@
-title: A post with citations
-date: "2020-04-10"
-bibliography: references.bib
-
-format: pandoc
-pandoc:
-  input-files:
-    - content.md

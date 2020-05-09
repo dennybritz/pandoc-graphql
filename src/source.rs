@@ -1,12 +1,14 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use heck::KebabCase;
 use serde::Deserialize;
 use std::fs::File;
+use std::io::Write;
+use tempfile::NamedTempFile;
 
 #[derive(Deserialize, Debug, Eq, PartialEq, Copy, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum FormatKind {
-    Markdown,
+    CommonMark,
     Pandoc,
 }
 
@@ -31,6 +33,55 @@ pub struct Post {
     pub base_dir: String,
     #[serde(skip)]
     pub assets: Vec<Asset>,
+}
+
+impl Post {
+    pub fn slug(&self) -> String {
+        self.slug.clone().unwrap_or(self.title.to_kebab_case())
+    }
+
+    pub fn citations(&self) -> Result<Option<Vec<Citation>>> {
+        match &self.bibliography {
+            Some(bibfile) => {
+                let bibstr = crate::pandoc::run_pandoc_citeproc(&self.base_dir, &bibfile)?;
+                let citations: Citations = serde_yaml::from_str(&bibstr)?;
+                Ok(Some(citations.references))
+            }
+            None => Ok(None),
+        }
+    }
+
+    pub fn html(&self) -> Result<String> {
+        match &self.format {
+            FormatKind::Pandoc => {
+                let config = self.pandoc.as_ref().ok_or(anyhow!("no pandoc config"))?;
+                let buf = crate::pandoc::run_pandoc(&self.base_dir, config, "html")?;
+                let html = String::from_utf8(buf)?;
+                Ok(html)
+            }
+            FormatKind::CommonMark => {
+                let md_config = self
+                    .markdown
+                    .as_ref()
+                    .ok_or(anyhow!("no markdown config"))?;
+                Ok(crate::pandoc::markdown_to_html(&self.base_dir, md_config)?)
+            }
+        }
+    }
+
+    pub fn convert(&self, format: &str) -> Result<String> {
+        match self.format {
+            FormatKind::Pandoc => {
+                let config = self.pandoc.as_ref().ok_or(anyhow!("no pandoc config"))?;
+                let buf = crate::pandoc::run_pandoc(&self.base_dir, config, &format)?;
+                Ok(base64::encode(buf))
+            }
+            _ => {
+                let html = self.html()?;
+                crate::pandoc::convert_from_html(html.as_ref(), format)
+            }
+        }
+    }
 }
 
 /// A citation in CSL (https://citationstyles.org/) format
@@ -67,15 +118,9 @@ pub struct CitationIssued {
     pub month: Option<i32>,
 }
 
-#[derive(Deserialize, Debug, Clone, juniper::GraphQLObject)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Citations {
     pub references: Vec<Citation>,
-}
-
-impl Post {
-    pub fn slug(&self) -> String {
-        self.slug.clone().unwrap_or(self.title.to_kebab_case())
-    }
 }
 
 #[derive(Deserialize, Debug, Clone, juniper::GraphQLObject)]
@@ -112,10 +157,14 @@ pub fn source_from_directory(base: &str) -> Result<Vec<Post>> {
                 post_data.assets = source_assets(&base_dir)?;
             }
             post_data.base_dir = base_dir;
-
             return Ok(post_data);
-        })
-        .collect()
+        }).filter_map(|post: Result<Post>| match post {
+            Ok(post) => Some(Ok(post)),
+            Err(e) => {
+                log::warn!("{}", e);
+                None
+            }
+        }).collect()
 }
 
 pub fn source_assets(base: &str) -> Result<Vec<Asset>> {
@@ -233,7 +282,7 @@ mod tests {
             .find(|p| p.base_dir == "test/content/markdown")
             .unwrap();
         assert_eq!(md_post.title, "Writing in Markdown");
-        assert_eq!(md_post.format, FormatKind::Markdown);
+        assert_eq!(md_post.format, FormatKind::CommonMark);
 
         let pandoc_md_post = posts
             .iter()

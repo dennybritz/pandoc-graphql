@@ -1,9 +1,9 @@
-title: Writing in Markdown
-date: "2020-04-10"
+title: Writing in Pandoc Markdown
+date: "2020-05-10"
 description: |
-  This example demonstrates how to write content in markdown. Cupcake ipsum dolor sit amet chocolate bar. Donut topping jelly macaroon dessert powder cheesecake.
-slug: "writing-in-markdown"
-url: "/2020/04/writing-in-markdown"
+  This example demonstrates how to write content in pandoc markdown. Cupcake ipsum dolor sit amet chocolate bar. Donut topping jelly macaroon dessert powder cheesecake.
+slug: "writing-in-pandoc-markdown"
+url: "/2020/04/writing-in-pandoc-markdown"
 draft: true
 tags:
   - Machine Learning
@@ -12,16 +12,19 @@ authors:
     email: "dennybritz@gmail.com"
     url: https://twitter.com/dennybritz
     affiliation: Stanford University
-    affiliation_url: https://stanford.edu
-  - name: Kiryu Kazuma
+    affiliation_url: https://twitter.com/dennybritz
 bibtex: |
-  @article{britz2020hellomarkdown,
+  @article{britz2020hellopandocmarkdown,
     author={Denny Britz},
     title={Hello World},
     year={2020},
     url={https://github.com/dennybritz/blogapi-rs},
   }
+bibliography: ../references.bib
 
-format: markdown
-markdown:
-  path: content.md
+format: pandoc
+pandoc:
+  metadata:
+    title: Writing in Markdown
+  input-files:
+    - content.md

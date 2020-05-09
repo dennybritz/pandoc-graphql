@@ -2,6 +2,7 @@ use crate::source;
 use anyhow::Result;
 use pulldown_cmark::{html, Parser};
 use std::io::Cursor;
+use std::io::Write;
 use std::process::Command;
 use tempfile::NamedTempFile;
 
@@ -13,6 +14,23 @@ pub fn markdown_to_html(base_dir: &str, config: &source::MarkdownConfig) -> Resu
     let parser = Parser::new(markdown_str.as_str());
     html::write_html(Cursor::new(&mut bytes), parser)?;
     Ok(String::from_utf8(bytes)?)
+}
+
+pub fn convert_from_html(html: &str, format: &str) -> Result<String> {
+    let (mut file, path) = NamedTempFile::new()?.keep()?;
+    // let parent_dir = format!("{}", path.parent().unwrap().display());
+    file.write_all(html.as_bytes())?;
+    log::info!("writing temporary html file: {}", path.display());
+    let config = format!(
+        r###"
+        from: html
+        input-file: '{}'
+    "###,
+        path.display()
+    );
+    let config = serde_yaml::from_str(&config)?;
+    let buf = crate::pandoc::run_pandoc(".", &config, &format)?;
+    Ok(base64::encode(buf))
 }
 
 pub fn run_pandoc(
@@ -96,5 +114,15 @@ mod tests {
         let result = run_pandoc_citeproc("test/content/citations", "references.bib")
             .expect("failed to call pandoc-citeproc");
         assert!(result.contains("Impartial triangular chocolate bar games"));
+    }
+
+    #[test]
+    pub fn test_convert_from_html() {
+        init();
+        let html = "<h1>Hello HTML!</h1>";
+        let result = convert_from_html(html, "markdown").unwrap();
+        let decoded = base64::decode(result).expect("base64 decoding failed");
+        let result = String::from_utf8(decoded).expect("utf-8 decodding failed");
+        assert_eq!(result, "Hello HTML!\n===========\n")
     }
 }
