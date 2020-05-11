@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: true
     - name: Install pandoc + tex
       run: |
         wget https://github.com/jgm/pandoc/releases/download/2.9.2.1/pandoc-2.9.2.1-1-amd64.deb
@@ -21,3 +23,15 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+  docker-push:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:  
+    - name: build-push
+      uses: docker/build-push-action@v1
+      with:
+        username: ${{ DOCKER_USERNAME }}
+        password: ${{ DOCKER_PASSWORD }}
+        repository: dennybritz/ablog-api-local
+        tag_with_sha: true
+        tag_with_ref: true
