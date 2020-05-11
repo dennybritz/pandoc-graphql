@@ -7,7 +7,7 @@ use std::io::Write;
 use std::process::Command;
 use tempfile::NamedTempFile;
 
-pub fn markdown_to_html(base_dir: &str, config: &source::MarkdownConfig) -> Result<String> {
+pub fn markdown_to_html(base_dir: &str, config: &source::CommonMarkConfig) -> Result<String> {
     let md_file_path = format!("{}/{}", base_dir, config.path);
     log::info!("converting markdown to html: {}", md_file_path);
     let markdown_str = std::fs::read_to_string(md_file_path)?;
@@ -99,7 +99,7 @@ mod tests {
     #[test]
     pub fn test_run_pandoc() {
         init();
-        let base_dir = "test/content/markdown";
+        let base_dir = "content/markdown";
         let config = serde_yaml::from_str(
             r###"
         input-file: content.md
@@ -115,7 +115,7 @@ mod tests {
     #[test]
     pub fn test_run_citeproc() {
         init();
-        let result = run_pandoc_citeproc("test/content", "references.bib")
+        let result = run_pandoc_citeproc("content/", "references.bib")
             .expect("failed to call pandoc-citeproc");
         assert!(result.contains("Impartial triangular chocolate bar games"));
     }

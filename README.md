@@ -16,13 +16,14 @@ This project was build out of frustration with static site generators such as Je
 ## QuickStart
 
 ```
-cargo run -- serve --path test/content
+cargo run -- serve --path content/
 ```
 
 ## Supported Formats
 
-- CommonMark
-- Pandoc (any format)
+- [Pandoc (Default)]()
+- [CommonMark]()
+
 
 ## Supported Metadata
 

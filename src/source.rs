@@ -1,9 +1,9 @@
 use anyhow::{anyhow, Context, Result};
+use chrono::prelude::*;
 use heck::KebabCase;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::fs::File;
-use chrono::prelude::*;
 
 #[derive(Deserialize, Debug, Eq, PartialEq, Copy, Clone)]
 #[serde(rename_all = "lowercase")]
@@ -12,8 +12,17 @@ pub enum FormatKind {
     Pandoc,
 }
 
+impl FormatKind {
+    // This is only necessary because we need to call a functio
+    // for serde's default below
+    pub fn pandoc() -> Self {
+        FormatKind::Pandoc
+    }
+}
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct Post {
+    #[serde(default = "FormatKind::pandoc")]
     pub format: FormatKind,
 
     pub title: String,
@@ -25,7 +34,7 @@ pub struct Post {
     pub authors: Option<Vec<Author>>,
     pub bibtex: Option<String>,
     pub bibliography: Option<String>,
-    pub markdown: Option<MarkdownConfig>,
+    pub commonmark: Option<CommonMarkConfig>,
     pub pandoc: Option<BTreeMap<String, serde_yaml::Value>>,
 
     #[serde(skip)]
@@ -51,10 +60,7 @@ impl Post {
     }
 
     fn make_pandoc_config(&self) -> Result<BTreeMap<String, serde_yaml::Value>> {
-        let mut config = self
-            .pandoc
-            .clone()
-            .unwrap_or(BTreeMap::new());
+        let mut config = self.pandoc.clone().unwrap_or(BTreeMap::new());
 
         let mut metadata: BTreeMap<String, serde_yaml::Value> = config
             .get("metadata")
@@ -102,7 +108,7 @@ impl Post {
             }
             FormatKind::CommonMark => {
                 let md_config = self
-                    .markdown
+                    .commonmark
                     .as_ref()
                     .ok_or(anyhow!("no markdown config"))?;
                 Ok(crate::pandoc::markdown_to_html(&self.base_dir, md_config)?)
@@ -181,7 +187,7 @@ pub struct Asset {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-pub struct MarkdownConfig {
+pub struct CommonMarkConfig {
     pub path: String,
 }
 
@@ -195,7 +201,7 @@ pub fn source_from_directory(base: &str) -> Result<Vec<Post>> {
             let base_dir = format!("{}", path.parent().unwrap().display());
             log::info!("sourcing: {}", base_dir);
             let mut post_data: Post = serde_yaml::from_reader(File::open(&path)?)?;
-            
+
             // Validate date
             NaiveDate::parse_from_str(&post_data.date, "%Y-%m-%d")
                 .with_context(|| format!("failed parse date in: {}", base_dir))?;
@@ -312,7 +318,7 @@ mod tests {
     #[test]
     pub fn test_source_assets() {
         init();
-        let assets = source_assets("test/content/markdown").expect("failed to get assets");
+        let assets = source_assets("content/commonmark").expect("failed to get assets");
         assert_eq!(assets.len(), 1);
 
         assets
@@ -324,19 +330,19 @@ mod tests {
     #[test]
     pub fn test_source_from_directory() {
         init();
-        let posts = source_from_directory("test/content").expect("failed to get posts");
-        assert_eq!(posts.len(), 3);
+        let posts = source_from_directory("content/").expect("failed to get posts");
+        assert_eq!(posts.len(), 4);
 
         let md_post = posts
             .iter()
-            .find(|p| p.base_dir == "test/content/commonmark")
+            .find(|p| p.base_dir == "content/commonmark")
             .unwrap();
         assert_eq!(md_post.title, "Writing in CommonMark");
         assert_eq!(md_post.format, FormatKind::CommonMark);
 
         let pandoc_md_post = posts
             .iter()
-            .find(|p| p.base_dir == "test/content/markdown")
+            .find(|p| p.base_dir == "content/markdown")
             .unwrap();
         assert_eq!(pandoc_md_post.title, "Writing in Markdown");
         assert_eq!(pandoc_md_post.format, FormatKind::Pandoc);
