@@ -117,7 +117,11 @@ mod tests {
         init();
         let result = run_pandoc_citeproc("content/", "references.bib")
             .expect("failed to call pandoc-citeproc");
-        assert!(result.contains("Impartial triangular chocolate bar games"));
+        assert!(
+            result.contains("Impartial triangular chocolate bar games"),
+            "{}",
+            &result,
+        );
     }
 
     #[test]
