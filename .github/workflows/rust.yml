@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:  
-    - name: build-push
+    - name: docker-build-push
       uses: docker/build-push-action@v1
       with:
         username: ${{ DOCKER_USERNAME }}
