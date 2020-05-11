@@ -11,6 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Install pandoc + tex
+      run: |
+        wget https://github.com/jgm/pandoc/releases/download/2.9.2.1/pandoc-2.9.2.1-1-amd64.deb
+        sudo dpkg -i pandoc-2.9.2.1-1-amd64.deb
+        sudo apt-get update
+        sudo apt-get install texlive-latex-base texlive-fonts-recommended texlive-fonts-extra texlive-latex-extra
     - name: Build
       run: cargo build --verbose
     - name: Run tests
