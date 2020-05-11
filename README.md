@@ -75,3 +75,11 @@ bibtex: |
 # See https://github.com/jgm/pandoc-citeproc/blob/master/man/pandoc-citeproc.1.md
 bibliography: references.bib
 ```
+
+## Misc
+
+Build Docker images
+
+```
+docker build -t dennybritz/ablog-api-local .
+```
