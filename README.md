@@ -32,8 +32,6 @@ metadata:
   title: A blog post written in Markdown
   author: ["Denny Britz"]
   date: "2020-01-01"
-  assets:
-    - "writing-in-markdown"
 input-files:
 - writing-in-markdown/part1.md
 - writing-in-markdown/part2.md
