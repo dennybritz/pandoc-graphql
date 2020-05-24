@@ -1,10 +1,4 @@
 metadata:
-  id: "about"
-  title: About Me
-  author: ["Denny Britz"]
-input-file: about.md
----
-metadata:
   id: "writing-in-markdown"
   collections: ["posts"]
   title: Writing in Markdown

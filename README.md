@@ -15,8 +15,8 @@ This project was build out of frustration with static site generators such as Je
 
 ## QuickStart
 
-```
-cargo run -- serve --path index.yaml
+```bash
+cargo run -- serve -f test/content/index.yaml -b test/content
 ```
 
 ## Content Definition
@@ -24,12 +24,6 @@ cargo run -- serve --path index.yaml
 You define your content using one or more YAML files. Each YAML documents is a [pandoc defaults file](https://pandoc.org/MANUAL.html#default-files) that is passed to pandoc. This file customizes how pandoc builds your content. For example, a blog would have one YAML document per blog post. The following example shows a file declaring two blog posts (one is a draft) and an about page. In this case, all three documents are defined in a single YAML stream, but you could also split them across multiple files.
 
 ```yaml
-metadata:
-  id: "about"
-  title: About Me
-  author: ["Denny Britz"]
-input-file: about.md
----
 metadata:
   id: "writing-in-markdown"
   collections: ["drafts"]
