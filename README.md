@@ -13,10 +13,12 @@ Turns your local documents into a GraphQL API using pandoc.
 
 This project was build out of frustration with static site generators such as Jekyll or Hugo. I've used most of them, and while they are convenient, I felt locked-into my choice because the content was coupled with the design and layout of the pages. I also couldn't write content in any form I wanted, such as latex.
 
-## QuickStart
+## Quick Start
 
 ```bash
 cargo run -- serve -f test/content/index.yaml -b test/content
+
+open "http://localhost:8080/graphiql"
 ```
 
 ## Content Definition
