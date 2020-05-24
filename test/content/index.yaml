@@ -1,0 +1,31 @@
+metadata:
+  id: "about"
+  title: About Me
+  author: ["Denny Britz"]
+input-file: about.md
+---
+metadata:
+  id: "writing-in-markdown"
+  collections: ["posts"]
+  title: Writing in Markdown
+  description: |
+    Cupcake ipsum dolor sit amet. Soufflé apple pie pie halvah pastry jelly beans ice cream. Wafer tart topping pudding I love I love bonbon I love. Jelly beans macaroon sugar plum I love caramels tootsie roll. I love I love candy. Pie lemon drops dragée pastry.
+  author: ["Denny Britz"]
+  date: "2020-01-01"
+  bibliography: references.bib
+input-file: markdown/content.md
+resource-path: ["markdown"]
+---
+# We need to enable to citations extension explicitly for Jupyter formats
+from: ipynb+citations
+metadata:
+  id: "writing-in-jupyter"
+  collections: ["posts"]
+  title: Writing in  Jupyter
+  description: |
+    Cupcake ipsum dolor sit amet. Soufflé apple pie pie halvah pastry jelly beans ice cream.
+  author: ["Denny Britz"]
+  date: "2020-01-05"
+  bibliography: references.bib
+input-file: jupyter/content.ipynb
+

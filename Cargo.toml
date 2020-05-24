@@ -1,5 +1,5 @@
 [package]
-name = "ablog-api-local"
+name = "pandoc-graphql"
 version = "0.1.0"
 authors = ["Denny Britz <dennybritz@gmail.com>"]
 edition = "2018"
@@ -16,7 +16,6 @@ juniper = "0.14.2"
 juniper_warp = "0.5.2"
 log = "0.4.8"
 notify = "5.0.0-pre.2"
-pulldown-cmark = "0.7.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8.11"
 tempfile = "3.1.0"
@@ -26,5 +25,5 @@ warp = "0.1"
 yaml-rust = "0.4.3"
 
 [[bin]]
-name = "ablog-api-local"
+name = "pandoc-graphql"
 src = "src/main.rs"

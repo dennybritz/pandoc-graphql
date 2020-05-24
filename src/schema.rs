@@ -1,120 +1,154 @@
-use crate::source;
 use juniper::{EmptyMutation, FieldResult};
-use std::sync::{Arc, RwLock};
-use chrono::prelude::*;
 
 #[juniper::object]
-#[graphql(description = "A blog post")]
-impl crate::source::Post {
-    fn title(&self) -> &str {
-        &self.title
+#[graphql(description = "A document")]
+impl super::document::Document {
+    fn id(&self) -> &str {
+        self.id.as_ref()
     }
 
-    fn date(&self) -> &str {
-        &self.date
+    fn collections(&self) -> &Vec<String> {
+        self.collections.as_ref()
     }
 
-    fn description(&self) -> Option<&String> {
-        self.description.as_ref()
+    fn title(&self) -> Option<&str> {
+        self.title.as_deref()
     }
 
-    fn slug(&self) -> String {
-        self.slug()
+    fn author(&self) -> &Vec<String> {
+        self.author.as_ref()
     }
 
-    fn draft(&self) -> Option<bool> {
-        self.draft
+    fn date(&self) -> Option<&str> {
+        self.date.as_deref()
     }
 
-    fn tags(&self) -> Option<&Vec<String>> {
+    fn description(&self) -> Option<&str> {
+        self.description.as_deref()
+    }
+
+    fn tags(&self) -> &Vec<String> {
         self.tags.as_ref()
     }
 
-    fn bibtex(&self) -> Option<&String> {
-        self.bibtex.as_ref()
+    pub fn convert(&self, args: Option<Vec<String>>) -> FieldResult<String> {
+        let args = args.unwrap_or(vec![]);
+        let args = args.iter().map(|x| x.as_ref()).collect();
+        let data = self.convert(args)?;
+        Ok(base64::encode(data))
     }
 
-    fn authors(&self) -> Option<&Vec<source::Author>> {
-        self.authors.as_ref()
+    pub fn html(&self) -> FieldResult<String> {
+        let data = self.convert(vec!["-t", "html"])?;
+        let data = String::from_utf8(data)?;
+        Ok(data)
     }
 
-    fn assets(&self) -> &Vec<source::Asset> {
-        &self.assets
-    }
-
-    fn citations(&self) -> FieldResult<Option<Vec<source::Citation>>> {
+    fn citations(&self) -> FieldResult<Option<Vec<crate::citation::Citation>>> {
         self.citations().map_err(|e| e.into())
     }
 
-    fn html(&self) -> FieldResult<String> {
-        self.html().map_err(|e| e.into())
-    }
-
-    fn pdf(&self) -> FieldResult<String> {
-        self.convert("pdf").map_err(|e| e.into())
-    }
-
-    fn markdown(&self) -> FieldResult<String> {
-        self.convert("markdown").map_err(|e| e.into())
+    fn asset(&self, name: String) -> FieldResult<String> {
+        for asset_path in self.asset_paths.iter() {
+            let fpath = format!("{}/{}", asset_path, name);
+            let fpath = std::path::Path::new(&fpath);
+            if fpath.exists() && fpath.is_file() {
+                let buf = std::fs::read(fpath)?;
+                return Ok(base64::encode(buf));
+            }
+        }
+        Err(anyhow::anyhow!("asset not found: {}", name).into())
     }
 }
 
-#[derive(Clone)]
-pub struct SharedContext {
-    pub context: Arc<RwLock<Context>>,
+#[derive(Debug, Clone)]
+pub struct Context {
+    index_files: Vec<String>,
+    base_dir: String,
 }
+impl juniper::Context for Context {}
 
-impl SharedContext {
-    pub fn new() -> Self {
-        SharedContext {
-            context: Arc::new(RwLock::new(Context { posts: vec![] })),
+impl Context {
+    pub fn new(index_files: Vec<String>, base_dir: String) -> Self {
+        Context {
+            index_files,
+            base_dir,
         }
     }
 
-    pub fn update(&self, path: &str) {
-        let mut ctx = self.context.write().unwrap();
-        match crate::source::source_from_directory(path) {
-            Ok(posts) => ctx.posts = posts,
-            Err(e) => log::warn!("failed to source posts from {}: {}", path, e),
-        };
+    pub fn load_documents_from_file(
+        &self,
+        path: &std::path::PathBuf,
+    ) -> anyhow::Result<Vec<super::document::Document>> {
+        log::info!("reading documents from: {}", path.display());
+        let docs = std::fs::read_to_string(path)?;
+        let docs: Vec<&str> = docs.split("\n---\n").collect();
+        // TODO: Move this into Document implementation
+        docs.into_iter()
+            .map(|d| {
+                let mut doc: super::document::PandocDefaults = serde_yaml::from_str(d)?;
+                doc.metadata.pandoc_defaults_str = String::from(d);
+                doc.metadata.asset_paths = doc.asset_paths(&self.base_dir);
+                doc.metadata.base_dir = String::from(&self.base_dir);
+                Ok(doc.metadata)
+            })
+            .collect()
+    }
+
+    pub fn load_documents(&self) -> anyhow::Result<Vec<super::document::Document>> {
+        let mut docs: Vec<super::document::Document> = self
+            .index_files
+            .iter()
+            .filter_map(|pattern| match glob::glob(pattern) {
+                Ok(paths) => Some(paths.flatten()),
+                Err(e) => {
+                    log::warn!("invalid glob pattern, ignoring {}: {}", &pattern, e);
+                    None
+                }
+            })
+            .flatten()
+            .filter_map(|pb| match self.load_documents_from_file(&pb) {
+                Ok(docs) => Some(docs),
+                Err(e) => {
+                    log::warn!("failed to load documents, ignoring {}: {}", pb.display(), e);
+                    None
+                }
+            })
+            .flatten()
+            .collect();
+        docs.sort_by(|a, b| b.date.cmp(&a.date));
+        Ok(docs)
     }
 }
-
-pub struct Context {
-    pub posts: Vec<crate::source::Post>,
-}
-impl juniper::Context for SharedContext {}
 
 pub struct Query;
 
-#[juniper::object(Context = SharedContext)]
+#[juniper::object(Context = Context)]
 impl Query {
     fn apiVersion() -> &str {
-        "1.0"
+        "0.1"
     }
 
-    fn posts(context: &SharedContext) -> FieldResult<Vec<source::Post>> {
-        let context = context.context.as_ref().read().unwrap();
-        // TODO: Can we get rid of this clone !?
-        let mut posts = context.posts.clone();
-        posts.sort_by(|a, b| {
-            let a =  NaiveDate::parse_from_str(&a.date, "%Y-%m-%d").unwrap();
-            let b =  NaiveDate::parse_from_str(&b.date, "%Y-%m-%d").unwrap();
-            b.cmp(&a)
-        });
-        Ok(posts)
+    fn documents(
+        context: &Context,
+        collection: Option<String>,
+    ) -> FieldResult<Vec<super::document::Document>> {
+        let docs = context.load_documents()?;
+        let docs = match collection {
+            Some(name) => docs
+                .into_iter()
+                .filter(|d| d.collections.contains(&name))
+                .collect(),
+            None => docs,
+        };
+        Ok(docs)
     }
 
-    fn post(context: &SharedContext, slug: String) -> FieldResult<source::Post> {
-        let context = context.context.as_ref().read().unwrap();
-        let post = context
-            .posts
-            .iter()
-            .find(|p| p.slug() == slug)
-            .ok_or(anyhow::anyhow!("no post for slug: {}", &slug))?
-            .clone();
-        Ok(post)
+    fn document(context: &Context, id: String) -> FieldResult<super::document::Document> {
+        let docs = context.load_documents()?;
+        let document = docs.into_iter().find(|d| d.id.as_str() == id.as_str());
+        document.ok_or(anyhow::anyhow!("document not found: {}", &id).into())
     }
 }
 
-pub type Schema = juniper::RootNode<'static, Query, EmptyMutation<SharedContext>>;
+pub type Schema = juniper::RootNode<'static, Query, EmptyMutation<Context>>;

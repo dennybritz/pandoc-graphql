@@ -1,9 +1,7 @@
-use ablog_api_local::schema;
+use pandoc_graphql::schema;
 use clap::Clap;
-use notify::{RecommendedWatcher, RecursiveMode, Watcher};
-use warp::Filter;
-
 use juniper::EmptyMutation;
+use warp::Filter;
 
 #[derive(Clap)]
 #[clap(version = "0.1.0", author = "Denny Britz <dennybritz@gmail.com>")]
@@ -21,9 +19,13 @@ enum SubCommand {
 /// Insert records into the database
 #[derive(Clap, Debug)]
 struct ServeOpts {
-    /// Read JSON records from this path
-    #[clap(short = "p", long = "path")]
-    path: String,
+    /// Read document index from these files (can be globs)
+    #[clap(short = "f", long = "file", multiple = true)]
+    files: Vec<String>,
+
+    /// Base directory to run pandoc from
+    #[clap(short = "b", long = "base-dir", default_value=".")]
+    base_dir: String,
 
     /// Enable CORS requests from all origins (useful for local development)
     #[clap(long = "cors")]
@@ -31,28 +33,18 @@ struct ServeOpts {
 }
 
 fn make_schema() -> schema::Schema {
-    schema::Schema::new(schema::Query, EmptyMutation::<schema::SharedContext>::new())
+    schema::Schema::new(schema::Query, EmptyMutation::<schema::Context>::new())
 }
 
 fn serve(opts: &ServeOpts) {
-    log::info!("watching {}", opts.path);
+    log::info!("reading files from {}", opts.files.join(", "));
 
-    let path = opts.path.clone();
-    let shared_ctx = schema::SharedContext::new();
-    shared_ctx.update(&path);
+    let base_dir = std::fs::canonicalize(&opts.base_dir).unwrap();
+    let base_dir = base_dir.to_string_lossy();
+    log::info!("using base dir {}", &base_dir);
 
-    let watched_ctx = shared_ctx.clone();
-    let mut watcher: RecommendedWatcher = Watcher::new_immediate(move |res| match res {
-        Ok(_event) => {
-            log::info!("file changed detected, rebuilding context");
-            watched_ctx.update(&path);
-        }
-        Err(e) => log::info!("watch error: {:?}", e),
-    })
-    .expect("failed to create watcher");
-    watcher.watch(&opts.path, RecursiveMode::Recursive).unwrap();
-
-    let state = warp::any().map(move || shared_ctx.clone());
+    let context = schema::Context::new(opts.files.clone(), String::from(base_dir));
+    let state = warp::any().map(move || context.clone());
     let warp_log = warp::log("warp_server");
     let graphql_filter = juniper_warp::make_graphql_filter(make_schema(), state.boxed());
 
