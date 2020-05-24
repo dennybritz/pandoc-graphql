@@ -23,7 +23,7 @@ open "http://localhost:8080/graphiql"
 
 ## Content Definition
 
-You define your content using one or more YAML files. Each YAML documents is a [pandoc defaults file](https://pandoc.org/MANUAL.html#default-files) that is passed to pandoc. This file customizes how pandoc builds your content. For example, a blog would have one YAML document per blog post. The following example shows a file declaring two blog posts (one is a draft). In this case, both documents are defined in a single YAML stream, but you could also split them across multiple files. All paths in this file are relative to the base dir, which is passed via the `-b` option.
+You define your content using one or more YAML files. Each YAML documents is a [pandoc defaults file](https://pandoc.org/MANUAL.html#default-files) that is passed to pandoc. This file customizes how pandoc builds your content. For example, a blog would have one YAML document per blog post. The following example shows a file declaring two blog posts (one is a draft). In this case, both documents are defined in a single YAML stream, but you could also split them across multiple files (you can pass multiple `-f` options, and each can be a glob). All paths in this file are relative to the base dir, which is passed via the `-b` option.
 
 ```yaml
 metadata:
