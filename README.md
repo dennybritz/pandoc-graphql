@@ -21,7 +21,7 @@ cargo run -- serve -f test/content/index.yaml -b test/content
 
 ## Content Definition
 
-You define your content using one or more YAML files. Each YAML documents is a [pandoc defaults file](https://pandoc.org/MANUAL.html#default-files) that is passed to pandoc. This file customizes how pandoc builds your content. For example, a blog would have one YAML document per blog post. The following example shows a file declaring two blog posts (one is a draft) and an about page. In this case, all three documents are defined in a single YAML stream, but you could also split them across multiple files.
+You define your content using one or more YAML files. Each YAML documents is a [pandoc defaults file](https://pandoc.org/MANUAL.html#default-files) that is passed to pandoc. This file customizes how pandoc builds your content. For example, a blog would have one YAML document per blog post. The following example shows a file declaring two blog posts (one is a draft). In this case, both documents are defined in a single YAML stream, but you could also split them across multiple files. All paths in this file are relative to the base dir, which is passed via the `-b` option.
 
 ```yaml
 metadata:
@@ -32,9 +32,9 @@ metadata:
   date: "2020-01-01"
   assets:
     - "writing-in-markdown"
-input-files: 
+input-files:
 - writing-in-markdown/part1.md
-- writing-in-markdown/part2.md  
+- writing-in-markdown/part2.md
 ---
 metadata:
   id: "writing-in-jupyter"
@@ -57,7 +57,7 @@ title: Post Title
 
 # A document belongs to a set of collections
 # This allows you to query for specific types of documents, e.g. "draft" posts in your frontend application
-collections: 
+collections:
   - "Posts"
 
 author:
