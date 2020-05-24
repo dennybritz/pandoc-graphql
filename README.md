@@ -115,4 +115,4 @@ Build Docker images
 
 ```
 docker build -t dennybritz/pandoc-graphql .
-``` -->
+```
